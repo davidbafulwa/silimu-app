@@ -86,15 +86,26 @@ jobs:
         run: flutter test
         working-directory: mobile_app_tmp
 
-      - name: Compiler l'APK
-        run: flutter build apk --release
+      - name: Compiler les APK
+        run: |
+          flutter build apk --release --split-per-abi --obfuscate \
+            --split-debug-info=build/symbols
         working-directory: mobile_app_tmp
+
+      - name: Préparer les fichiers à publier
+        run: |
+          cd mobile_app_tmp/build/app/outputs/flutter-apk
+          # Un fichier par architecture : 3x plus léger qu'un APK universel
+          cp app-arm64-v8a-release.apk   SILIMU.apk        # 95 % des téléphones
+          cp app-armeabi-v7a-release.apk SILIMU-arm32.apk # téléphones anciens
+          cp app-x86_64-release.apk       SILIMU-emu.apk   # émulateurs
+          ls -lh SILIMU*.apk
 
       - name: Publier la release
         uses: softprops/action-gh-release@v2
         with:
-          files: mobile_app_tmp/build/app/outputs/flutter-apk/app-release.apk
-          name: silimu-1.0.0
+          files: mobile_app_tmp/build/app/outputs/flutter-apk/SILIMU*.apk
+          name: SILIMU 1.0.0
           tag_name: v1.0.0
           overwrite_files: true
           body: |
@@ -102,7 +113,16 @@ jobs:
 
             Application de réservation de billets de transport lacustre (lac Kivu / Tanganyika).
 
-            **Télécharger** : `app-release.apk` ci-dessous.
+            | Fichier | Pour qui | Taille |
+            |---|---|---|
+            | **SILIMU.apk** | Téléphones Android récents (à choisir dans 95 % des cas) | ~17 Mo |
+            | SILIMU-arm32.apk | Téléphones Android anciens | ~15 Mo |
+            | SILIMU-emu.apk | Émulateurs Android | ~17 Mo |
 
-            Installation sur Android : activez « Sources inconnues », puis ouvrez le fichier.
+            **Télécharger : [SILIMU.apk](https://github.com/davidbafulwa/silimu-app/releases/latest/download/SILIMU.apk)**
+
+            Installation : activez « Sources inconnues », puis ouvrez le fichier.
             Au premier lancement, indiquez l'adresse de votre serveur SILIMU.
+
+            Pour une version encore plus légère, sans téléchargement : ouvrez le site
+            et utilisez « Installer l'application » (PWA).
