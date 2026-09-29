@@ -140,13 +140,15 @@ jobs:
           fi
           gradle -p android_shell assembleRelease --no-daemon -q
           ls -lh android_shell/app/build/outputs/apk/release/
+          cp android_shell/app/build/outputs/apk/release/app-release.apk \
+            mobile_app_tmp/SILIMU-leger.apk
 
       - name: Publier la release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             mobile_app_tmp/build/app/outputs/flutter-apk/SILIMU*.apk
-            android_shell/app/build/outputs/apk/release/app-release.apk
+            mobile_app_tmp/SILIMU-leger.apk
           name: SILIMU 1.0.0
           tag_name: v1.0.0
           overwrite_files: true
