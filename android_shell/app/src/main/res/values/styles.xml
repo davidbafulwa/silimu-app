@@ -2,6 +2,6 @@
 <resources>
     <style name="Silimu" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@drawable/ecran_demarrage</item>
-        <item name="android:statusBarColor">#07303F</item>
+        <item name="android:statusBarColor">@color/navy</item>
     </style>
 </resources>

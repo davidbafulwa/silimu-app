@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Écran de démarrage : fond bleu SILIMU + logo centré -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="#07303F" />
+    <item android:drawable="@color/navy" />
     <item>
         <bitmap
             android:src="@drawable/silimu_logo"
