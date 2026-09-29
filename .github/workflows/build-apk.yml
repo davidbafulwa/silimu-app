@@ -45,6 +45,7 @@ jobs:
           rm -rf mobile_app_tmp/lib mobile_app_tmp/test mobile_app_tmp/analysis_options.yaml
           cp -r mobile_app/lib mobile_app_tmp/lib
           cp -r mobile_app/test mobile_app_tmp/test
+          cp -r mobile_app/assets mobile_app_tmp/assets
           cp mobile_app/pubspec.yaml mobile_app_tmp/pubspec.yaml
           sed -i 's|<application|<application android:usesCleartextTraffic="true"|' \
             mobile_app_tmp/android/app/src/main/AndroidManifest.xml
