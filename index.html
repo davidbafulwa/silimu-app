@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SILIMU — Télécharger l'application</title>
+<meta name="description" content="SILIMU : réservez vos billets de bateau sur le lac Kivu et le lac Tanganyika. Application mobile à télécharger.">
+<meta name="theme-color" content="#07303F">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{--navy:#07303F;--teal:#0FB5B0;--orange:#F47533;--ink:#0F172A;--muted:#64748B;--line:#E2E8F0}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);
+       background:linear-gradient(180deg,#07303F 0%,#0a4256 55%,#0d5468 100%);min-height:100vh}
+  .carte{max-width:640px;margin:0 auto;background:#fff;border-radius:24px;padding:32px 24px 28px;margin:28px 16px 48px;
+         box-shadow:0 30px 70px -30px rgba(0,0,0,.55)}
+  .logo{width:72px;height:72px;display:block;margin:0 auto 14px}
+  h1{font-size:26px;margin:0 0 6px;text-align:center;letter-spacing:-.02em}
+  .sous{color:var(--muted);text-align:center;margin:0 0 24px;font-size:15px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:17px 18px;border-radius:16px;
+       font-weight:700;font-size:16px;text-decoration:none;margin-bottom:12px;border:1px solid transparent}
+  .btn-primaire{background:var(--teal);color:#fff;box-shadow:0 14px 30px -12px rgba(15,181,176,.9)}
+  .btn-primaire:active{transform:translateY(1px)}
+  .btn-second{background:#fff;border-color:var(--line);color:var(--navy)}
+  .note{font-size:12.5px;color:var(--muted);text-align:center;margin:4px 0 0}
+  .bloc{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+  .bloc h2{font-size:15px;margin:0 0 10px;color:var(--navy)}
+  ol{margin:0;padding-left:20px;font-size:14.5px;line-height:1.85;color:#334155}
+  .serveur{background:#F1F5F9;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13.5px;
+           word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--navy)}
+  .pastilles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+  .pastille{background:rgba(255,255,255,.12);color:#E2F7F6;font-size:11.5px;padding:5px 11px;border-radius:999px;font-weight:600}
+  footer{text-align:center;color:rgba(255,255,255,.65);font-size:12px;padding:0 16px 30px;line-height:1.7}
+  footer a{color:#9FE8E5}
+</style>
+</head>
+<body>
+
+<div class="carte">
+  <svg class="logo" viewBox="0 0 64 64" aria-label="SILIMU">
+    <rect width="64" height="64" rx="16" fill="#07303F"/>
+    <path d="M8 40c6-8 12-8 16-2s12 6 18 0 10-6 14-2v10H8z" fill="#0FB5B0"/>
+    <path d="M8 30c6-8 12-8 16-2s12 6 18 0 10-6 14-2" fill="none" stroke="#F47533" stroke-width="4" stroke-linecap="round"/>
+  </svg>
+
+  <h1>SILIMU</h1>
+  <p class="sous">Réservation de billets de bateau — lac Kivu et lac Tanganyika</p>
+
+  <a class="btn btn-primaire" href="SILIMU-leger.apk" download>
+    Télécharger l'application
+    <span style="font-weight:500;opacity:.9">136 Ko</span>
+  </a>
+  <p class="note">Se télécharge en quelques secondes, même avec une connexion lente.</p>
+
+  <a class="btn btn-second" href="https://github.com/davidbafulwa/silimu-app/releases/latest/download/SILIMU.apk" download>
+    Version complète (16 Mo, fonctionne hors ligne)
+  </a>
+
+  <div class="bloc">
+    <h2>Installer sur le téléphone</h2>
+    <ol>
+      <li>Appuyez sur « Télécharger l'application ».</li>
+      <li>Ouvrez le fichier téléchargé.</li>
+      <li>Si Android bloque : <strong>Paramètres → Sécurité → Sources inconnues</strong>, autorisez le navigateur, puis revenez.</li>
+      <li>Appuyez sur <strong>Installer</strong>.</li>
+      <li>Au premier lancement, indiquez l'adresse du serveur ci-dessous.</li>
+    </ol>
+  </div>
+
+  <div class="bloc">
+    <h2>Adresse du serveur</h2>
+    <div class="serveur" id="adresse">Chargement…</div>
+    <p class="note" style="margin-top:8px">À saisir au premier lancement de l'application.
+      Sur le même Wi-Fi que l'ordinateur, l'adresse locale est souvent plus rapide.</p>
+  </div>
+
+  <div class="pastilles">
+    <span class="pastille">Android</span>
+    <span class="pastille">Web</span>
+    <span class="pastille">Windows</span>
+    <span class="pastille">macOS</span>
+    <span class="pastille">Linux</span>
+  </div>
+</div>
+
+<footer>
+  SILIMU — application de réservation lacustre<br>
+  <a href="https://github.com/davidbafulwa/silimu-app">Code source</a> ·
+  <a href="https://github.com/davidbafulwa/silimu-app/releases">Toutes les versions</a>
+</footer>
+
+<script>
+  fetch('adresse-serveur.txt?t=' + Date.now())
+    .then(r => r.ok ? r.text() : Promise.reject(r.status))
+    .then(t => {
+      var url = t.trim();
+      if (url) document.getElementById('adresse').textContent = url;
+    })
+    .catch(() => { document.getElementById('adresse').textContent = 'http://10.44.145.106:8000'; });
+</script>
+</body>
+</html>
