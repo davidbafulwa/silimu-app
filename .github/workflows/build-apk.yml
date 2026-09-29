@@ -142,6 +142,15 @@ jobs:
           ls -lh android_shell/app/build/outputs/apk/release/
           cp android_shell/app/build/outputs/apk/release/app-release.apk \
             mobile_app_tmp/SILIMU-leger.apk
+          # Met à jour la copie servie par la page de téléchargement
+          if ! cmp -s mobile_app_tmp/SILIMU-leger.apk SILIMU-leger.apk; then
+            cp mobile_app_tmp/SILIMU-leger.apk SILIMU-leger.apk
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add SILIMU-leger.apk
+            git commit -q -m "APK leger : version pre-remplie" || true
+            git push || true
+          fi
 
       - name: Publier la release
         uses: softprops/action-gh-release@v2

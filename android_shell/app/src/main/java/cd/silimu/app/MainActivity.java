@@ -31,7 +31,11 @@ public class MainActivity extends Activity {
 
     private static final String PREFS = "silimu";
     private static final String CLE_URL = "url";
-    private static final String URL_DEFAUT = "https://davidbafulwa.github.io/";
+
+    // Adresse pré-remplie au premier lancement : le site SILIMU en accès
+    // public (fonctionne en Wi-Fi comme en data mobile). Elle reste
+    // modifiable avec le bouton « Adresse ».
+    private static final String URL_DEFAUT = "https://admit-closely-peoples-skiing.trycloudflare.com";
 
     private WebView web;
     private LinearLayout racine;
@@ -143,7 +147,7 @@ public class MainActivity extends Activity {
         final EditText saisie = new EditText(this);
         saisie.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         saisie.setHint("ex. http://192.168.1.10:8000");
-        saisie.setText(prefs().getString(CLE_URL, ""));
+        saisie.setText(prefs().getString(CLE_URL, URL_DEFAUT));
         boite.addView(saisie);
 
         final TextView erreur = new TextView(this);
