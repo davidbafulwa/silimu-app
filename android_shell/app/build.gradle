@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'cd.silimu.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "cd.silimu.app"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    // Signature de debug : le fichier s'installe directement sur le téléphone.
+    signingConfigs {
+        release {
+            storeFile file("silimu.keystore")
+            storePassword "silimu"
+            keyAlias "silimu"
+            keyPassword "silimu"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
