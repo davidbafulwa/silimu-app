@@ -51,6 +51,28 @@ jobs:
           sed -i 's|android:label="[^"]*"|android:label="SILIMU"|' \
             mobile_app_tmp/android/app/src/main/AndroidManifest.xml
 
+      - name: Installer le logo et les icônes SILIMU
+        run: |
+          RES=mobile_app_tmp/android/app/src/main/res
+          for d in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+            cp mobile_app/assets/android/$d/*.png "$RES/$d"/
+          done
+          mkdir -p "$RES/mipmap-anydpi-v26"
+          cp mobile_app/assets/android/mipmap-anydpi-v26/*.xml "$RES/mipmap-anydpi-v26/"
+          cp mobile_app/assets/android/drawable/ic_launcher_background.xml "$RES/drawable/"
+          # Écran de démarrage aux couleurs de SILIMU
+          find mobile_app_tmp/android/app/src/main/res -name 'launch_background.xml' \
+            -exec sed -i 's|@android:color/white|#07303F|g' {} +
+          # Icônes et manifeste de la version web
+          cp mobile_app/assets/icon-192.png mobile_app_tmp/web/icons/Icon-192.png
+          cp mobile_app/assets/icon-512.png mobile_app_tmp/web/icons/Icon-512.png
+          cp mobile_app/assets/icon-192.png mobile_app_tmp/web/icons/Icon-maskable-192.png
+          cp mobile_app/assets/icon-512.png mobile_app_tmp/web/icons/Icon-maskable-512.png
+          cp mobile_app/assets/favicon-32.png mobile_app_tmp/web/favicon.png
+          sed -i 's|silimu_app|SILIMU|g' mobile_app_tmp/web/manifest.json
+          sed -i 's|#0175C2|#07303F|g' mobile_app_tmp/web/manifest.json
+          sed -i 's|silimu_app|SILIMU|g' mobile_app_tmp/web/index.html
+
       - name: Installer les dépendances
         run: flutter pub get
         working-directory: mobile_app_tmp
@@ -73,6 +95,7 @@ jobs:
           files: mobile_app_tmp/build/app/outputs/flutter-apk/app-release.apk
           name: silimu-1.0.0
           tag_name: v1.0.0
+          overwrite_files: true
           body: |
             ### SILIMU 1.0.0
 

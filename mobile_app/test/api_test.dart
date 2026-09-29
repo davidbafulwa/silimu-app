@@ -44,9 +44,60 @@ void main() {
 
   group('Statuts', () {
     test('libellés lisibles', () {
-      expect(libelleStatut('EN_ATTENTE'), 'En attente de paiement');
+      expect(libelleStatut('EN_ATTENTE'), 'En attente');
       expect(libelleStatut('EMBARQUE'), 'Embarqué');
       expect(libelleStatut('INCONNU'), 'inconnu');
+    });
+  });
+
+  group('Lecture des données', () {
+    test('une traversée est lue depuis le JSON de l’API', () {
+      final t = Traversee(objet(<String, dynamic>{
+        'id': 7,
+        'date': '2026-03-12',
+        'heure': '07:30:00',
+        'prix': 25000,
+        'statut': 'PROGAMMEE',
+        'places_disponibles': 12,
+        'route': {
+          'duree_min': 95,
+          'port_depart': {'id': 1, 'nom': 'Bukavu'},
+          'port_arrivee': {'id': 2, 'nom': 'Goma'},
+        },
+        'bateau': {'nom': 'MS Kivu'},
+      }));
+      expect(t.id, 7);
+      expect(t.depart, 'Bukavu');
+      expect(t.arrivee, 'Goma');
+      expect(t.heure, '07:30');
+      expect(t.date, '12/03/2026');
+      expect(t.prix, '25 000 FC');
+      expect(t.duree, '95 min');
+      expect(t.nomBateau, 'MS Kivu');
+      expect(t.statut, 'Programmée');
+      expect(t.reserveable, isTrue);
+    });
+
+    test('une traversée complète ou annulée n’est pas réservable', () {
+      final complete = Traversee(objet(<String, dynamic>{'statut': 'COMPLETE', 'places_disponibles': 30}));
+      final annulee = Traversee(objet(<String, dynamic>{'statut': 'ANNULEE', 'places_disponibles': 30}));
+      final vide = Traversee(objet(<String, dynamic>{'statut': 'PROGAMMEE', 'places_disponibles': 0}));
+      expect(complete.reserveable, isFalse);
+      expect(annulee.reserveable, isFalse);
+      expect(vide.reserveable, isFalse);
+    });
+
+    test('les listes de l’API sont acceptées avec ou sans pagination', () {
+      expect(ApiClient.liste(<dynamic>[1, 2]).length, 2);
+      expect(ApiClient.liste(objet(<String, dynamic>{'results': <dynamic>[1]})).length, 1);
+      expect(ApiClient.liste(objet(<String, dynamic>{'resultats': <dynamic>[1, 2, 3]})).length, 3);
+      expect(ApiClient.liste(null), isEmpty);
+    });
+
+    test('initiales pour l’avatar du profil', () {
+      expect(initiales('Jean-Pierre Mukendi'), 'JM');
+      expect(initiales('Alice'), 'A');
+      expect(initiales('  '), '?');
     });
   });
 }

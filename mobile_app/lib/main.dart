@@ -13,14 +13,25 @@ const String kServeurParDefaut = String.fromEnvironment(
 );
 
 const Color kNavy = Color(0xFF07303F);
+const Color kNavyClair = Color(0xFF0C4A5E);
 const Color kTeal = Color(0xFF0FB5B0);
 const Color kSunset = Color(0xFFF47533);
 const Color kSand = Color(0xFFF6F2EA);
 const Color kEncre = Color(0xFF123140);
+const String kLogo = 'assets/icon-512.png';
 
 void main() {
   runApp(const SilimuApp());
 }
+
+/// Ombre douce réutilisée par les cartes.
+List<BoxShadow> ombre(double force) => <BoxShadow>[
+      BoxShadow(
+        color: kNavy.withValues(alpha: 0.06 + force * 0.04),
+        blurRadius: 18 + force * 10,
+        offset: Offset(0, 6 + force * 4),
+      ),
+    ];
 
 /// État de session : client API + passager connecté.
 class Session extends ChangeNotifier {
@@ -89,30 +100,77 @@ class _SilimuAppState extends State<SilimuApp> {
       colorScheme: ColorScheme.fromSeed(seedColor: kNavy).copyWith(
         primary: kNavy,
         secondary: kTeal,
+        surface: Colors.white,
       ),
       scaffoldBackgroundColor: kSand,
     );
     return base.copyWith(
+      textTheme: base.textTheme.copyWith(
+        headlineSmall: const TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w800,
+          color: kNavy,
+          letterSpacing: -0.4,
+        ),
+        titleLarge: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: kNavy),
+        titleMedium: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kNavy),
+        bodyMedium: const TextStyle(fontSize: 14, color: kEncre, height: 1.35),
+        labelSmall: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.4),
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: kNavy,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontSize: 19,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.6,
+          color: Colors.white,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: const Color(0xFFF4F7F8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+        labelStyle: const TextStyle(color: Colors.black54, fontSize: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: kTeal, width: 1.6),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: kNavy,
-          minimumSize: const Size.fromHeight(50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          minimumSize: const Size.fromHeight(52),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: kTeal.withValues(alpha: 0.16),
+        elevation: 8,
+        labelTextStyle: WidgetStateProperty.all(
+          const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: kNavy),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected) ? kNavy : Colors.black45,
+            size: 23,
+          ),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(color: Color(0x14073040), thickness: 1),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: kNavy,
+        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13.5),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -130,6 +188,30 @@ class _SilimuAppState extends State<SilimuApp> {
           home: _session.connecte ? const PageAccueil() : const PageConnexion(),
         ),
       ),
+    );
+  }
+}
+
+/// Logo SILIMU sur fond blanc arrondi (comme l'icône de l'application).
+class LogoSilimu extends StatelessWidget {
+  final double taille;
+  final bool surBlanc;
+  const LogoSilimu({super.key, this.taille = 84, this.surBlanc = true});
+
+  @override
+  Widget build(BuildContext context) {
+    final logo = Image.asset(
+      kLogo,
+      width: taille * 0.72,
+      height: taille * 0.72,
+      fit: BoxFit.contain,
+    );
+    if (!surBlanc) return logo;
+    return Container(
+      width: taille,
+      height: taille,
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(taille * 0.28)),
+      child: Center(child: logo),
     );
   }
 }
@@ -230,85 +312,111 @@ class _PageConnexionState extends State<PageConnexion>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kNavy,
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-          children: [
-            const Text(
-              'SILIMU',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 34,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0C4A5E), kNavy, Color(0xFF04202B)],
+          ),
+        ),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
+            children: [
+              const Center(child: LogoSilimu(taille: 92)),
+              const SizedBox(height: 16),
+              const Text(
+                'SILIMU',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 4,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Transport lacustre — Kivu & Tanganyika',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xB8FFFFFF), fontSize: 13),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+              const SizedBox(height: 4),
+              const Text(
+                'Réservez votre passage sur le lac Kivu',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xB8FFFFFF), fontSize: 13.5),
               ),
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TabBar(
-                    controller: _tabs,
-                    labelColor: kNavy,
-                    unselectedLabelColor: Colors.grey,
-                    indicatorColor: kSunset,
-                    tabs: const [Tab(text: 'Connexion'), Tab(text: 'Inscription')],
-                  ),
-                  const SizedBox(height: 18),
-                  TextField(
-                    controller: _serveur,
-                    keyboardType: TextInputType.url,
-                    decoration: InputDecoration(
-                      labelText: 'Adresse du serveur',
-                      hintText: 'http://192.168.1.10:8000',
-                      suffixIcon: IconButton(
-                        tooltip: 'Vérifier',
-                        onPressed: _enCours ? null : _validerServeur,
-                        icon: const Icon(Icons.wifi_tethering),
+              const SizedBox(height: 26),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: ombre(1),
+                ),
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TabBar(
+                      controller: _tabs,
+                      labelColor: kNavy,
+                      unselectedLabelColor: Colors.black45,
+                      indicatorColor: kSunset,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: const Color(0x14073040),
+                      labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      tabs: const [Tab(text: 'Connexion'), Tab(text: 'Inscription')],
+                    ),
+                    const SizedBox(height: 18),
+                    TextField(
+                      controller: _serveur,
+                      keyboardType: TextInputType.url,
+                      decoration: InputDecoration(
+                        labelText: 'Adresse du serveur',
+                        hintText: 'http://192.168.1.10:8000',
+                        prefixIcon: const Icon(Icons.dns_outlined, color: kTeal),
+                        suffixIcon: IconButton(
+                          tooltip: 'Vérifier la connexion',
+                          onPressed: _enCours ? null : _validerServeur,
+                          icon: const Icon(Icons.wifi_tethering, color: kNavy),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  AnimatedBuilder(
-                    animation: _tabs,
-                    builder: (context, _) => _tabs.index == 0
-                        ? _formulaire(
-                            champs: [
-                              _champ(_telephone, 'Téléphone', Icons.phone, TextInputType.phone),
-                              _champ(_motDePasse, 'Mot de passe', Icons.lock_outline, TextInputType.text, passe: true),
-                            ],
-                            action: 'Se connecter',
-                            surAction: _connexion,
-                          )
-                        : _formulaire(
-                            champs: [
-                              _champ(_nom, 'Nom complet', Icons.person_outline, TextInputType.text),
-                              _champ(_telephone, 'Téléphone', Icons.phone, TextInputType.phone),
-                              _champ(_email, 'E-mail (optionnel)', Icons.mail_outline, TextInputType.emailAddress),
-                              _champ(_motDePasse, 'Mot de passe (8 caractères)', Icons.lock_outline, TextInputType.text, passe: true),
-                            ],
-                            action: 'Créer mon compte',
-                            surAction: _inscription,
-                          ),
-                  ),
+                    const SizedBox(height: 14),
+                    AnimatedBuilder(
+                      animation: _tabs,
+                      builder: (context, _) => _tabs.index == 0
+                          ? _formulaire(
+                              champs: [
+                                _champ(_telephone, 'Téléphone', Icons.phone_outlined, TextInputType.phone),
+                                _champ(_motDePasse, 'Mot de passe', Icons.lock_outline, TextInputType.text, passe: true),
+                              ],
+                              action: 'Se connecter',
+                              surAction: _connexion,
+                            )
+                          : _formulaire(
+                              champs: [
+                                _champ(_nom, 'Nom complet', Icons.person_outline, TextInputType.text),
+                                _champ(_telephone, 'Téléphone', Icons.phone_outlined, TextInputType.phone),
+                                _champ(_email, 'E-mail (optionnel)', Icons.mail_outline, TextInputType.emailAddress),
+                                _champ(_motDePasse, 'Mot de passe (8 caractères)', Icons.lock_outline, TextInputType.text, passe: true),
+                              ],
+                              action: 'Créer mon compte',
+                              surAction: _inscription,
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _Atout(icone: Icons.qr_code_2, texte: 'Billet QR'),
+                  SizedBox(width: 18),
+                  _Atout(icone: Icons.payments_outlined, texte: 'Mobile Money'),
+                  SizedBox(width: 18),
+                  _Atout(icone: Icons.lock_outline, texte: 'Paiement sûr'),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -327,10 +435,7 @@ class _PageConnexionState extends State<PageConnexion>
         controller: controleur,
         obscureText: passe,
         keyboardType: type,
-        decoration: InputDecoration(
-          labelText: libelle,
-          prefixIcon: Icon(icone),
-        ),
+        decoration: InputDecoration(labelText: libelle, prefixIcon: Icon(icone, color: kTeal)),
       ),
     );
   }
@@ -340,24 +445,40 @@ class _PageConnexionState extends State<PageConnexion>
     required String action,
     required Future<void> Function() surAction,
   }) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ...champs,
-          const SizedBox(height: 4),
-          FilledButton(
-            onPressed: _enCours ? null : surAction,
-            child: _enCours
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : Text(action),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ...champs,
+        const SizedBox(height: 6),
+        FilledButton(
+          onPressed: _enCours ? null : surAction,
+          child: _enCours
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+                )
+              : Text(action),
+        ),
+      ],
+    );
+  }
+}
+
+class _Atout extends StatelessWidget {
+  final IconData icone;
+  final String texte;
+  const _Atout({required this.icone, required this.texte});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icone, color: kTeal, size: 20),
+        const SizedBox(height: 4),
+        Text(texte, style: const TextStyle(color: Color(0xB8FFFFFF), fontSize: 10.5)),
+      ],
     );
   }
 }
