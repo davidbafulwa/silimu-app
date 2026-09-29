@@ -1,0 +1,84 @@
+name: SILIMU — APK Android
+
+# Compile l'application Flutter et publie automatiquement l'APK
+# dans l'onglet Releases, téléchargeable par tout le monde.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile_app/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: silimu-apk
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Compiler et publier l'APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+
+      - name: Générer la base du projet
+        run: |
+          flutter create \
+            --org cd.silimu \
+            --project-name silimu_app \
+            --platforms=android,web \
+            mobile_app_tmp
+
+      - name: Injecter le code de l'application
+        run: |
+          rm -rf mobile_app_tmp/lib mobile_app_tmp/test mobile_app_tmp/analysis_options.yaml
+          cp -r mobile_app/lib mobile_app_tmp/lib
+          cp -r mobile_app/test mobile_app_tmp/test
+          cp mobile_app/pubspec.yaml mobile_app_tmp/pubspec.yaml
+          sed -i 's|<application|<application android:usesCleartextTraffic="true"|' \
+            mobile_app_tmp/android/app/src/main/AndroidManifest.xml
+          sed -i 's|android:label="[^"]*"|android:label="SILIMU"|' \
+            mobile_app_tmp/android/app/src/main/AndroidManifest.xml
+
+      - name: Installer les dépendances
+        run: flutter pub get
+        working-directory: mobile_app_tmp
+
+      - name: Analyser le code
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        working-directory: mobile_app_tmp
+
+      - name: Lancer les tests
+        run: flutter test
+        working-directory: mobile_app_tmp
+
+      - name: Compiler l'APK
+        run: flutter build apk --release
+        working-directory: mobile_app_tmp
+
+      - name: Publier la release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: mobile_app_tmp/build/app/outputs/flutter-apk/app-release.apk
+          name: silimu-1.0.0
+          tag_name: v1.0.0
+          body: |
+            ### SILIMU 1.0.0
+
+            Application de réservation de billets de transport lacustre (lac Kivu / Tanganyika).
+
+            **Télécharger** : `app-release.apk` ci-dessous.
+
+            Installation sur Android : activez « Sources inconnues », puis ouvrez le fichier.
+            Au premier lancement, indiquez l'adresse de votre serveur SILIMU.
