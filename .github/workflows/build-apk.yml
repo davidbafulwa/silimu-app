@@ -114,15 +114,14 @@ jobs:
           cp -r mobile_app/assets/android/mipmap-* android_shell/app/src/main/res/
           # Clé de signature stable (générée une seule fois, conservée pour que
           # les mises à jour s'installent par-dessus l'application existante)
-          cd android_shell/app
-          if [ ! -f silimu.keystore ]; then
-            keytool -genkeypair -v -keystore silimu.keystore \
+          if [ ! -f android_shell/app/silimu.keystore ]; then
+            keytool -genkeypair -v -keystore android_shell/app/silimu.keystore \
               -storepass silimu -keypass silimu -alias silimu \
               -keyalg RSA -keysize 2048 -validity 10950 \
               -dname "CN=SILIMU, OU=SILIMU, O=SILIMU, L=Bukavu, C=CD"
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add silimu.keystore
+            git add android_shell/app/silimu.keystore
             git commit -q -m "Cle de signature Android (developpement)" || true
             git push || true
           fi
@@ -132,14 +131,14 @@ jobs:
               https://services.gradle.org/distributions/gradle-8.9-bin.zip
             sudo unzip -q -o /tmp/gradle.zip -d /opt
             echo "/opt/gradle-8.9/bin" >> "$GITHUB_PATH"
+            export PATH="/opt/gradle-8.9/bin:$PATH"
           fi
-          cd android_shell
           if ! [ -d "${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/platforms/android-34" ]; then
             yes | sdkmanager --licenses >/dev/null 2>&1 || true
             sdkmanager "platforms;android-34" "build-tools;34.0.0" >/dev/null 2>&1 || true
           fi
-          gradle assembleRelease --no-daemon -q
-          ls -lh app/build/outputs/apk/release/
+          gradle -p android_shell assembleRelease --no-daemon -q
+          ls -lh android_shell/app/build/outputs/apk/release/
 
       - name: Publier la release
         uses: softprops/action-gh-release@v2
