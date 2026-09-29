@@ -4,7 +4,7 @@
     <item android:drawable="#07303F" />
     <item>
         <bitmap
-            android:src="@mipmap/ic_launcher"
+            android:src="@drawable/silimu_logo"
             android:gravity="center" />
     </item>
 </layer-list>
