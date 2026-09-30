@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'adresse.dart';
 import 'api.dart';
 import 'pages.dart';
 
-/// Adresse du serveur par défaut au premier lancement.
-/// Sur un téléphone réel, l'utilisateur la change dans l'écran de connexion
-/// (par exemple http://192.168.1.10:8000). Sur l'émulateur Android,
-/// la machine hôte est accessible via 10.0.2.2.
+/// Adresse de repli, seulement si la découverte automatique échoue et
+/// qu'aucune adresse n'a encore été mémorisée. Aucune IP ni port n'est
+/// nécessaire dans le fonctionnement normal : l'application va chercher
+/// l'adresse officielle du site (voir adresse.dart).
 const String kServeurParDefaut = String.fromEnvironment(
   'SILIMU_URL',
-  defaultValue: 'http://10.0.2.2:8000',
+  defaultValue: 'https://davidbafulwa.github.io',
 );
 
 const Color kNavy = Color(0xFF07303F);
@@ -41,8 +42,20 @@ class Session extends ChangeNotifier {
 
   Map<String, dynamic>? passager;
   String? erreur;
+  bool adresseEnCours = true;
 
   bool get connecte => passager != null;
+
+  /// Va chercher l'adresse du serveur toute seule, puis l'utilise.
+  /// L'utilisateur n'a donc plus à saisir d'adresse ni de port.
+  Future<void> demarrer() async {
+    adresseEnCours = true;
+    notifyListeners();
+    final adresse = await trouverServeur();
+    api.baseUrl = apiDepuisAdresse(adresse);
+    adresseEnCours = false;
+    notifyListeners();
+  }
 
   void ouvrir(Map<String, dynamic> reponse) {
     final p = reponse['passager'];
@@ -58,7 +71,23 @@ class Session extends ChangeNotifier {
 
   void changerServeur(String saisie) {
     final base = ApiClient.normaliserServeur(saisie);
-    if (base.isNotEmpty) api.baseUrl = base;
+    if (base.isNotEmpty) {
+      api.baseUrl = base;
+      memoriserServeur(saisie.trim());
+    }
+    notifyListeners();
+  }
+
+  /// Force une nouvelle recherche d'adresse (bouton « Actualiser »).
+  Future<void> rafraichirAdresse() async {
+    adresseEnCours = true;
+    notifyListeners();
+    final adresse = await trouverServeur();
+    if (adresse.isNotEmpty) {
+      api.baseUrl = apiDepuisAdresse(adresse);
+      await memoriserServeur(adresse);
+    }
+    adresseEnCours = false;
     notifyListeners();
   }
 
@@ -87,6 +116,14 @@ class SilimuApp extends StatefulWidget {
 
 class _SilimuAppState extends State<SilimuApp> {
   final Session _session = Session();
+
+  @override
+  void initState() {
+    super.initState();
+    // L'adresse du serveur est découverte automatiquement : l'application
+    // n'a besoin ni d'adresse IP ni de port à saisir.
+    _session.demarrer();
+  }
 
   @override
   void dispose() {
@@ -228,13 +265,22 @@ class _PageConnexionState extends State<PageConnexion>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs = TabController(length: 2, vsync: this);
 
-  final _serveur = TextEditingController(text: kServeurParDefaut);
+  final _serveur = TextEditingController();
   final _telephone = TextEditingController();
   final _motDePasse = TextEditingController();
   final _nom = TextEditingController();
   final _email = TextEditingController();
 
   bool _enCours = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final session = SessionPortee.lire(context);
+    // L'adresse a été trouvée automatiquement au démarrage : on l'affiche,
+    // l'utilisateur n'a rien à saisir.
+    _serveur.text = session.api.baseUrl.replaceFirst(RegExp(r'/api$'), '');
+  }
 
   @override
   void dispose() {
@@ -245,6 +291,19 @@ class _PageConnexionState extends State<PageConnexion>
     _nom.dispose();
     _email.dispose();
     super.dispose();
+  }
+
+  /// Relance la recherche de l'adresse officielle du site.
+  Future<void> _rechercherAdresse() async {
+    final session = SessionPortee.lire(context);
+    setState(() => _enCours = true);
+    await session.rafraichirAdresse();
+    if (!mounted) return;
+    setState(() {
+      _serveur.text = session.api.baseUrl.replaceFirst(RegExp(r'/api$'), '');
+      _enCours = false;
+    });
+    _message('Adresse mise à jour : ${_serveur.text}');
   }
 
   void _message(String texte) {
@@ -262,6 +321,9 @@ class _PageConnexionState extends State<PageConnexion>
       return;
     }
     setState(() => _enCours = true);
+    // On applique d'abord l'adresse saisie, on la teste ensuite : sinon on
+    // vérifiait l'ancienne adresse et le test ne disait rien de la nouvelle.
+    session.changerServeur(_serveur.text);
     try {
       await session.api.ports();
       session.changerServeur(_serveur.text);
@@ -369,12 +431,23 @@ class _PageConnexionState extends State<PageConnexion>
                       keyboardType: TextInputType.url,
                       decoration: InputDecoration(
                         labelText: 'Adresse du serveur',
-                        hintText: 'http://192.168.1.10:8000',
+                        helperText: 'Trouvée automatiquement — aucune saisie nécessaire',
+                        helperMaxLines: 2,
                         prefixIcon: const Icon(Icons.dns_outlined, color: kTeal),
-                        suffixIcon: IconButton(
-                          tooltip: 'Vérifier la connexion',
-                          onPressed: _enCours ? null : _validerServeur,
-                          icon: const Icon(Icons.wifi_tethering, color: kNavy),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Chercher l’adresse',
+                              onPressed: _enCours ? null : _rechercherAdresse,
+                              icon: const Icon(Icons.sync, color: kTeal),
+                            ),
+                            IconButton(
+                              tooltip: 'Vérifier la connexion',
+                              onPressed: _enCours ? null : _validerServeur,
+                              icon: const Icon(Icons.wifi_tethering, color: kNavy),
+                            ),
+                          ],
                         ),
                       ),
                     ),

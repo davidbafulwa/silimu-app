@@ -27,15 +27,25 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 public class MainActivity extends Activity {
 
     private static final String PREFS = "silimu";
     private static final String CLE_URL = "url";
 
-    // Adresse pré-remplie au premier lancement : le site SILIMU en accès
-    // public (fonctionne en Wi-Fi comme en data mobile). Elle reste
-    // modifiable avec le bouton « Adresse ».
-    private static final String URL_DEFAUT = "https://admit-closely-peoples-skiing.trycloudflare.com";
+    // Adresse de tout secours, seulement si la découverte automatique échoue
+    // (par exemple aucune connexion au moment du premier lancement).
+    private static final String URL_DEFAUT = "https://davidbafulwa.github.io";
+
+    // Fichier texte publié avec l'adresse du site SILIMU. Il ne change
+    // jamais : l'application y lit l'adresse à jour, ce qui évite toute
+    // saisie d'adresse IP ou de port.
+    private static final String ADRESSE_OFFICIELLE =
+            "https://davidbafulwa.github.io/silimu-app/adresse-serveur.txt";
 
     private WebView web;
     private LinearLayout racine;
@@ -97,7 +107,13 @@ public class MainActivity extends Activity {
         changer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                demanderAdresse();
+                // Retrouve l'adresse officielle avant d'ouvrir la saisie
+                chercherAdresse(new Runnable() {
+                    @Override
+                    public void run() {
+                        demanderAdresse();
+                    }
+                });
             }
         });
         barre.addView(changer);
@@ -115,7 +131,73 @@ public class MainActivity extends Activity {
         return getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
+    /**
+     * Va chercher l'adresse officielle du site SILIMU.
+     *
+     * L'adresse publique change quand la connexion de l'ordinateur qui
+     * héberge le site est rétablie : au lieu de demander une adresse IP et un
+     * port à l'utilisateur, l'application lit cette adresse toute seule. Il
+     * n'y a donc plus rien à saisir, ni à ré saisir après un changement.
+     */
+    private void chercherAdresse(final Runnable apres) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String trouvee = "";
+                HttpURLConnection connexion = null;
+                try {
+                    URL source = new URL(ADRESSE_OFFICIELLE + "?t=" + System.currentTimeMillis());
+                    connexion = (HttpURLConnection) source.openConnection();
+                    connexion.setConnectTimeout(8000);
+                    connexion.setReadTimeout(8000);
+                    connexion.setRequestProperty("Cache-Control", "no-cache");
+                    if (connexion.getResponseCode() == 200) {
+                        BufferedReader lecteur = new BufferedReader(
+                                new InputStreamReader(connexion.getInputStream(), "UTF-8"));
+                        StringBuilder texte = new StringBuilder();
+                        String ligne = lecteur.readLine();
+                        while (ligne != null) {
+                            texte.append(ligne);
+                            ligne = lecteur.readLine();
+                        }
+                        String adresse = texte.toString().trim();
+                        if (adresse.startsWith("http")) {
+                            trouvee = adresse;
+                            prefs().edit().putString(CLE_URL, trouvee).apply();
+                        }
+                    }
+                } catch (Exception e) {
+                    // Pas de réseau ou adresse indisponible : on garde celle déjà connue
+                } finally {
+                    if (connexion != null) {
+                        connexion.disconnect();
+                    }
+                }
+                final boolean ok = !trouvee.isEmpty();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (ok) {
+                            Toast.makeText(MainActivity.this,
+                                    "Adresse du serveur mise à jour", Toast.LENGTH_SHORT).show();
+                        }
+                        apres.run();
+                    }
+                });
+            }
+        }).start();
+    }
+
     private void chargerUrl() {
+        chercherAdresse(new Runnable() {
+            @Override
+            public void run() {
+                afficherSite();
+            }
+        });
+    }
+
+    private void afficherSite() {
         String url = prefs().getString(CLE_URL, "");
         if (url == null || url.trim().isEmpty()) {
             demanderAdresse();
@@ -146,9 +228,17 @@ public class MainActivity extends Activity {
 
         final EditText saisie = new EditText(this);
         saisie.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-        saisie.setHint("ex. http://192.168.1.10:8000");
+        saisie.setHint("trouvée automatiquement");
         saisie.setText(prefs().getString(CLE_URL, URL_DEFAUT));
         boite.addView(saisie);
+
+        TextView aide = new TextView(this);
+        aide.setText("L'adresse est normalement trouvée seule. Ce champ "
+                + "ne sert que si tu veux forcer une autre adresse.");
+        aide.setTextColor(Color.parseColor("#6B7A82"));
+        aide.setTextSize(12);
+        aide.setPadding(0, 8, 0, 8);
+        boite.addView(aide);
 
         final TextView erreur = new TextView(this);
         erreur.setText("Site injoignable. Vérifie le Wi-Fi et l'adresse.");
