@@ -68,6 +68,16 @@
   </div>
 
   <div class="bloc">
+    <h2>Se connecter</h2>
+    <p class="note" style="margin-bottom:14px">Ces liens te mènent directement à la bonne page,
+      même si l'adresse du serveur a changé.</p>
+    <div class="pastilles" style="justify-content:center">
+      <a class="btn" id="lien-client" href="#" style="text-decoration:none">Espace client</a>
+      <a class="btn btn-second" id="lien-pro" href="#" style="text-decoration:none">Espace agent et admin</a>
+    </div>
+  </div>
+
+  <div class="bloc">
     <h2>Adresse du serveur</h2>
     <div class="serveur" id="adresse">Chargement…</div>
     <p class="note" style="margin-top:8px">À saisir au premier lancement de l'application.
@@ -102,6 +112,13 @@
 </footer>
 
 <script>
+  function serveur() {
+    return fetch('adresse-serveur.txt?t=' + Date.now())
+      .then(r => r.ok ? r.text() : Promise.reject(r.status))
+      .then(function (t) { return t.trim(); })
+      .catch(function () { return 'http://10.44.145.106:8000'; });
+  }
+
   fetch('adresse-serveur.txt?t=' + Date.now())
     .then(r => r.ok ? r.text() : Promise.reject(r.status))
     .then(t => {
@@ -109,6 +126,19 @@
       if (url) document.getElementById('adresse').textContent = url;
     })
     .catch(() => { document.getElementById('adresse').textContent = 'http://10.44.145.106:8000'; });
+
+  // Liens de connexion : ils suivent automatiquement l'adresse du serveur,
+  // qui change quand la connexion est rétablie.
+  function brancher(id, chemin) {
+    document.getElementById(id).addEventListener('click', function (evenement) {
+      evenement.preventDefault();
+      serveur().then(function (url) {
+        window.location.href = url.replace(/\/$/, '') + chemin;
+      });
+    });
+  }
+  brancher('lien-client', '/compte/connexion/');
+  brancher('lien-pro', '/admin-silimu/connexion/');
 </script>
 </body>
 </html>
