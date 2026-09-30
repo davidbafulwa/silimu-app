@@ -17,6 +17,14 @@ const String kAdresseOfficielle =
 const String _cleUrl = 'silimu.url';
 const String _cleDate = 'silimu.date_url';
 
+/// Adresse de tout secours, utilisée seulement si la découverte automatique
+/// échoue et qu'aucune adresse n'a encore été mémorisée. Aucune IP ni port
+/// n'est nécessaire dans le fonctionnement normal.
+const String kServeurParDefaut = String.fromEnvironment(
+  'SILIMU_URL',
+  defaultValue: 'https://davidbafulwa.github.io',
+);
+
 /// Renvoie l'adresse du serveur, ou une chaîne vide si elle est introuvable.
 Future<String> adressePublique() async {
   try {

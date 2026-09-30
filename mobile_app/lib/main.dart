@@ -4,15 +4,6 @@ import 'adresse.dart';
 import 'api.dart';
 import 'pages.dart';
 
-/// Adresse de repli, seulement si la découverte automatique échoue et
-/// qu'aucune adresse n'a encore été mémorisée. Aucune IP ni port n'est
-/// nécessaire dans le fonctionnement normal : l'application va chercher
-/// l'adresse officielle du site (voir adresse.dart).
-const String kServeurParDefaut = String.fromEnvironment(
-  'SILIMU_URL',
-  defaultValue: 'https://davidbafulwa.github.io',
-);
-
 const Color kNavy = Color(0xFF07303F);
 const Color kNavyClair = Color(0xFF0C4A5E);
 const Color kTeal = Color(0xFF0FB5B0);
