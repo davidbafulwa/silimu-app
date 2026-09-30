@@ -274,6 +274,7 @@ class _OngletTraverseesState extends State<OngletTraversees> {
   int? _arrivee;
   bool _chargement = true;
   String? _erreur;
+  int? _reservationEnCours;
 
   @override
   void initState() {
@@ -529,12 +530,188 @@ class _OngletTraverseesState extends State<OngletTraversees> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: kTeal,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed:
+                            t.reserveable && _reservationEnCours == null ? () => _reserverRapide(t) : null,
+                        icon: _reservationEnCours == t.id
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.event_seat, size: 18),
+                        label: Text(_reservationEnCours == t.id ? 'Réservation…' : '1 place'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          foregroundColor: kNavy,
+                        ),
+                        onPressed: t.reserveable
+                            ? () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => PageDetailTraversee(traversee: t),
+                                  ),
+                                )
+                            : null,
+                        icon: const Icon(Icons.arrow_forward, size: 18),
+                        label: const Text('Plus de places'),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// Réservation rapide : une seule place, avec les informations du passager
+  /// connecté. Un seul geste, sans passer par le formulaire.
+  Future<void> _reserverRapide(Traversee t) async {
+    final session = SessionPortee.lire(context);
+    final passager = objet(session.passager);
+    final nom = (passager['nom_complet'] ?? '').toString().trim();
+    final telephone = (passager['telephone'] ?? '').toString().trim();
+    if (nom.length < 3 || telephone.length < 8) {
+      _message('Connecte-toi dans « Compte » pour réserver en un seul geste.');
+      return;
+    }
+
+    setState(() => _reservationEnCours = t.id);
+    try {
+      final billet = await session.api.creerReservation(
+        traversee: t.id,
+        nomPassager: nom,
+        telephone: telephone,
+        email: (passager['email'] ?? '').toString(),
+        nbPlaces: 1,
+        modePaiement: 'ORANGE_MONEY',
+      );
+      if (!mounted) return;
+      setState(() => _reservationEnCours = null);
+      _confirmerPlace(billet, t);
+      await _rafraichirSilencieux();
+    } on ErreurApi catch (e) {
+      if (mounted) setState(() => _reservationEnCours = null);
+      _message(e.message);
+    } catch (_) {
+      if (mounted) setState(() => _reservationEnCours = null);
+      _message('Réservation impossible pour le moment. Réessaie.');
+    }
+  }
+
+  void _confirmerPlace(Map<String, dynamic> billet, Traversee t) {
+    final code = (billet['code'] ?? '').toString();
+    final total = (billet['total'] ?? '').toString();
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: kTeal),
+            SizedBox(width: 8),
+            Expanded(child: Text('Place réservée')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${t.depart} → ${t.arrivee}'),
+            Text('Départ ${t.date} à ${t.heure}', style: const TextStyle(fontSize: 13, color: Colors.black54)),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: kNavy.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  const Text('Code du billet', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                  const SizedBox(height: 4),
+                  Text(
+                    code,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      letterSpacing: 1.4,
+                      fontWeight: FontWeight.w800,
+                      color: kNavy,
+                    ),
+                  ),
+                  if (total.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text('À régler : $total', style: const TextStyle(fontSize: 12.5)),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Le billet est « en attente » jusqu\'au paiement. Présente ce code au comptoir ou au contrôleur.',
+              style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Fermer'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: kTeal),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              final racine = Navigator.of(context);
+              racine.push(MaterialPageRoute<void>(builder: (_) => const OngletBillets()));
+            },
+            child: const Text('Mes billets'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _message(String texte) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(texte)));
+  }
+
+  /// Recharge la liste sans afficher l'écran de chargement (après une
+  /// réservation rapide, les places restantes changent).
+  Future<void> _rafraichirSilencieux() async {
+    final session = SessionPortee.lire(context);
+    try {
+      final data = await session.api.traversees(portDepart: _depart, portArrivee: _arrivee);
+      if (!mounted) return;
+      setState(() {
+        _traversees = data
+            .whereType<Map>()
+            .map((m) => Traversee(Map<String, dynamic>.from(m)))
+            .toList();
+      });
+    } catch (_) {
+      // la liste reste telle quelle
+    }
   }
 }
 
