@@ -62,6 +62,23 @@ bash ~/.local/bin/silimu-apk.sh
 - **Mes billets** — historique complet, statut, montant, annulation en un geste (la place est libérée).
 - **Profil** — informations du compte et serveur connecté.
 
+## Nouveautés du serveur
+
+Ces apports vivent dans le back-end Django ; l'application les reçoit sans
+modification, et le serveur s'en charge :
+
+- **Billet de fidélité** — au dixième voyage, un vrai billet est envoyé par e-mail :
+  félicitations, code, QR code signé et nom du bénéficiaire. Le QR est signé comme
+  l'e-billet de traversée : un code de récompense forgé est détecté au comptoir.
+  L'agent peut renvoyer le billet depuis son back-office si le message n'arrive pas.
+- **Comptes confirmés par e-mail** — un compte ne se connecte qu'après avoir cliqué
+  le lien reçu par e-mail (lien à usage unique, valable 24 h). En cas de perte, le
+  renvoi et la réinitialisation du mot de passe se font depuis l'application.
+- **Envois d'e-mails fiabilisés** — le service d'envoi refusait en silence les
+  messages sans HTML, si bien qu'aucun texte n'arrivait. L'envoi construit
+  désormais un HTML valide, réessaie, puis remonte l'échec à l'agent au lieu de
+  laisser croire à un succès.
+
 ## Comment ça marche
 
 L'application est une interface native ; **toute la logique métier reste sur le
